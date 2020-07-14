@@ -1,0 +1,152 @@
+buildscript {
+    ext {
+        springBootPluginVersion = "2.1.9.RELEASE"
+        junitVersion = "4.12"
+        vloggingVersion = "4.1.0"
+        feignHystrixStarterVersion = '2.1.4.RELEASE'
+        openfeignVersion = '10.3.0'
+        reaperClientVersion = '4.1.7-SNAPSHOT'
+    }
+
+    repositories {
+        maven {
+            url 'http://nexus.aihaisi.com/repository/public/'
+        }
+        jcenter()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:$springBootPluginVersion")
+    }
+}
+
+group = 'com.qiexr'
+version '0.0.1-SNAPSHOT'
+
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'io.spring.dependency-management'
+apply plugin: 'maven-publish'
+
+allprojects {
+    repositories {
+        maven {
+            url 'http://nexus.aihaisi.com/repository/public/'
+        }
+        maven { url "http://jitpack.io" }
+        jcenter()
+        mavenCentral()
+    }
+}
+
+dependencyManagement {
+    imports {
+        mavenBom 'com.xingren:vparent-bom:4.1.0'
+    }
+}
+
+dependencies {
+    compile("org.springframework.boot:spring-boot-configuration-processor:$springBootPluginVersion")
+    compile("org.springframework.cloud:spring-cloud-starter-openfeign:$feignHystrixStarterVersion")
+    compile("org.springframework.cloud:spring-cloud-starter-netflix-hystrix:$feignHystrixStarterVersion")
+    compile("org.projectlombok:lombok:1.18.2")
+    testCompile("junit:junit:$junitVersion")
+    compile("com.xingren:vlogging:$vloggingVersion")
+    compile("io.github.openfeign:feign-core:$openfeignVersion")
+    compile("io.github.openfeign:feign-httpclient:$openfeignVersion")
+    compile("io.github.openfeign:feign-okhttp:$openfeignVersion")
+    // oauth
+    compile("com.xingren.service:reaper-client:$reaperClientVersion")
+    compile fileTree(dir:'lib',includes:['*jar'])
+}
+
+idea {
+    module {
+        downloadSources = true
+        inheritOutputDirs = false
+        outputDir = file("$buildDir/classes/main/")
+        testOutputDir = file("$buildDir/classes/test/")
+    }
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.10'
+}
+
+publishing {
+    publications {
+        client(MavenPublication) {
+            groupId 'com.qiexr'
+            artifactId 'api-client-assembler'
+            version "$project.version"
+
+            from components.java
+
+            artifact sourcesJar
+            artifact javadocJar
+
+            // have to manually change the scope of maven dependencies in the generated pom from runtime to compile
+            // see https://discuss.gradle.org/t/maven-publish-plugin-generated-pom-making-dependency-scope-runtime/7494
+            pom.withXml {
+                asNode().dependencies.'*'.findAll() {
+                    it.scope.text() == 'runtime' && project.configurations.compile.allDependencies.find { dep ->
+                        dep.name == it.artifactId.text()
+                    }
+                }.each() {
+                    it.scope*.value = 'compile'
+                }
+            }
+        }
+    }
+    repositories {
+        /**
+         * 上海仓库
+         */
+        maven {
+            name 'snapshots'
+            url 'http://nexus.aihaisi.com/repository/snapshots/'
+            credentials {
+                username "$mavenUser"
+                password "$mavenPassword"
+            }
+        }
+        /**
+         * 成都仓库
+         */
+//        maven {
+//            name 'snapshots'
+//            url 'https://nexus.doctorwork.com/nexus/content/repositories/snapshots/'
+//            credentials {
+//                username "$mavenUser"
+//                password "$mavenPassword"
+//            }
+//        }
+//        maven {
+//            name 'release'
+//            url 'http://nexus.aihaisi.com/repository/releases/'
+//            credentials {
+//                username "$mavenUser"
+//                password "$mavenPassword"
+//            }
+//        }
+//        maven {
+//            name 'release'
+//            url 'https://nexus.doctorwork.com/nexus/content/repositories/releases/'
+//            credentials {
+//                username "$mavenUser"
+//                password "$mavenPassword"
+//            }
+//        }
+    }
+}
+
+task sourcesJar(type: Jar) {
+    classifier 'sources'
+    from sourceSets.main.allJava
+}
+
+task javadocJar(type: Jar, dependsOn: 'javadoc') {
+    classifier 'javadoc'
+    from javadoc
+}
