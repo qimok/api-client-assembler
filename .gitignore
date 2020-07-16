@@ -1,0 +1,30 @@
+.DS_Store
+**/build/
+**/classes/
+*.class
+# ide
+.idea/
+*.iml
+.settings/
+.project
+.classpath
+# gradle
+.gradle/
+# logs
+**/logs/
+*.log
+# node
+**/node_modules/
+# codegen
+api/src/test/generatedContract/
+admin/src/test/generatedContract/
+## swagger
+api/src/docs/asciidoc/generated/
+api/src/main/resources/static/docs/
+## vue
+admin/src/main/resources/static/static/
+admin/src/main/resources/templates/index.ftl
+# development
+application-local.properties
+rebel.xml
+api/gensrc/**

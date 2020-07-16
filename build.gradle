@@ -1,16 +1,18 @@
 buildscript {
     ext {
         springBootPluginVersion = "2.1.9.RELEASE"
-        junitVersion = "4.12"
-        vloggingVersion = "4.1.0"
         feignHystrixStarterVersion = '2.1.4.RELEASE'
         openfeignVersion = '10.3.0'
-        reaperClientVersion = '4.1.7-SNAPSHOT'
+        lombokVersion = '1.18.2'
+        junitVersion = "4.12"
+        slf4jVersion= "1.7.26"
+        jjwtVersion = "0.11.0"
+        jacksonVersion = "2.8.10"
     }
 
     repositories {
         maven {
-            url 'http://nexus.aihaisi.com/repository/public/'
+            url 'http://maven.aliyun.com/nexus/content/groups/public/'
         }
         jcenter()
         mavenCentral()
@@ -21,7 +23,7 @@ buildscript {
     }
 }
 
-group = 'com.qiexr'
+group = 'com.qimok'
 version '0.0.1-SNAPSHOT'
 
 apply plugin: 'java'
@@ -29,36 +31,40 @@ apply plugin: 'idea'
 apply plugin: 'io.spring.dependency-management'
 apply plugin: 'maven-publish'
 
-allprojects {
-    repositories {
-        maven {
-            url 'http://nexus.aihaisi.com/repository/public/'
-        }
-        maven { url "http://jitpack.io" }
-        jcenter()
-        mavenCentral()
-    }
+compileJava.options.encoding = 'UTF-8'
+compileTestJava.options.encoding = 'UTF-8'
+
+javadoc {
+    options.encoding = 'UTF-8'
 }
 
-dependencyManagement {
-    imports {
-        mavenBom 'com.xingren:vparent-bom:4.1.0'
+
+allprojects {
+    repositories {
+         maven {
+             name "aliyunmaven"
+             url "http://maven.aliyun.com/nexus/content/groups/public/"
+         }
     }
 }
 
 dependencies {
     compile("org.springframework.boot:spring-boot-configuration-processor:$springBootPluginVersion")
+    compile("org.springframework.boot:spring-boot-starter-logging:$springBootPluginVersion")
+    // feign
     compile("org.springframework.cloud:spring-cloud-starter-openfeign:$feignHystrixStarterVersion")
-    compile("org.springframework.cloud:spring-cloud-starter-netflix-hystrix:$feignHystrixStarterVersion")
-    compile("org.projectlombok:lombok:1.18.2")
-    testCompile("junit:junit:$junitVersion")
-    compile("com.xingren:vlogging:$vloggingVersion")
     compile("io.github.openfeign:feign-core:$openfeignVersion")
     compile("io.github.openfeign:feign-httpclient:$openfeignVersion")
     compile("io.github.openfeign:feign-okhttp:$openfeignVersion")
-    // oauth
-    compile("com.xingren.service:reaper-client:$reaperClientVersion")
-    compile fileTree(dir:'lib',includes:['*jar'])
+    compile("org.projectlombok:lombok:$lombokVersion")
+    compileOnly("org.json:json:20190722")
+    compile("joda-time:joda-time:2.9.9")
+    compile("io.jsonwebtoken:jjwt-api:$jjwtVersion")
+    runtime("io.jsonwebtoken:jjwt-impl:$jjwtVersion")
+    runtime("io.jsonwebtoken:jjwt-jackson:$jjwtVersion")
+    compile("com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion")
+    compile("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
+    testCompile("junit:junit:$junitVersion")
 }
 
 idea {
@@ -77,7 +83,7 @@ task wrapper(type: Wrapper) {
 publishing {
     publications {
         client(MavenPublication) {
-            groupId 'com.qiexr'
+            groupId 'com.qimok'
             artifactId 'api-client-assembler'
             version "$project.version"
 
@@ -100,44 +106,14 @@ publishing {
         }
     }
     repositories {
-        /**
-         * 上海仓库
-         */
         maven {
             name 'snapshots'
-            url 'http://nexus.aihaisi.com/repository/snapshots/'
+            url 'http://nexus.xxx.com/repository/snapshots/'
             credentials {
                 username "$mavenUser"
                 password "$mavenPassword"
             }
         }
-        /**
-         * 成都仓库
-         */
-//        maven {
-//            name 'snapshots'
-//            url 'https://nexus.doctorwork.com/nexus/content/repositories/snapshots/'
-//            credentials {
-//                username "$mavenUser"
-//                password "$mavenPassword"
-//            }
-//        }
-//        maven {
-//            name 'release'
-//            url 'http://nexus.aihaisi.com/repository/releases/'
-//            credentials {
-//                username "$mavenUser"
-//                password "$mavenPassword"
-//            }
-//        }
-//        maven {
-//            name 'release'
-//            url 'https://nexus.doctorwork.com/nexus/content/repositories/releases/'
-//            credentials {
-//                username "$mavenUser"
-//                password "$mavenPassword"
-//            }
-//        }
     }
 }
 
@@ -149,4 +125,8 @@ task sourcesJar(type: Jar) {
 task javadocJar(type: Jar, dependsOn: 'javadoc') {
     classifier 'javadoc'
     from javadoc
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
 }
